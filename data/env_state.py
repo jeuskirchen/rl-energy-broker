@@ -16,18 +16,40 @@ environment object.
  - cloud cover forecast 
 '''
 
-WEATHER_QUERY = """
-select weatherReportId, gameId, cloudCover, temperature, windSpeed, timeslotIndex as timeslot  
+WEATHER_REPORT_QUERY = """
+select weatherReportId, 
+       gameId, 
+       cloudCover, 
+       temperature, 
+       windSpeed, 
+       timeslotIndex as timeslot  
 from weather_report 
 where timeslotIndex <= {latest_timeslot} 
 and timeslotIndex > {latest_timeslot}-128
-and game_id = {game_id}
+and gameId = {game_id}
 order by timeslotIndex desc 
+"""
+
+WEATHER_FORECAST_QUERY = """
+select weatherForecastId, 
+       gameId, 
+       cloudCover, 
+       temperature, 
+       windSpeed, 
+       postedTimeslotIndex as timeslot, 
+       proximity, 
+       targetTimeslotIndex as target_timeslot 
+from weather_forecast 
+where postedTimeslotIndex = {latest_timeslot} 
+and gameId = {game_id}
+order by postedTimeslotIndex desc;
 """
 
 # Not sure if correct!!
 TARIFF_QUERY = """
-select rate.tariffSpecificationId, tariff_specification.brokerName, minValueMoney as MUBP_EWIIS3
+select rate.tariffSpecificationId, 
+       tariff_specification.brokerName, 
+       minValueMoney as MUBP_EWIIS3
 from rate 
 join tariff_specification
 on rate.tariffSpecificationId = tariff_specification.tariffSpecificationId
@@ -82,7 +104,10 @@ def load_env_state(game_id: str, latest_timeslot: int, limit: int = 128) -> [pd.
             game_id=game_id,
             latest_timeslot=latest_timeslot,
             limit=limit)
-        weather_query = WEATHER_QUERY.format(
+        weather_report_query = WEATHER_REPORT_QUERY.format(
+            game_id=game_id,
+            latest_timeslot=latest_timeslot)
+        weather_forecast_query = WEATHER_FORECAST_QUERY.format(
             game_id=game_id,
             latest_timeslot=latest_timeslot)
         prediction_query = PREDICTION_QUERY.format(
@@ -90,11 +115,12 @@ def load_env_state(game_id: str, latest_timeslot: int, limit: int = 128) -> [pd.
             latest_timeslot=latest_timeslot)
         # Query the data from the database as dataframes
         df_tariff = mysql.query(tariff_query)
-        df_weather = mysql.query(weather_query)
+        df_weather_report = mysql.query(weather_report_query)
+        df_weather_forecast = mysql.query(weather_forecast_query)
         df_pred = mysql.query(prediction_query)
         # TODO : put the dataframes into a single observation
         #  the way it's described in the gym observation space (see PowerTACEnv)
-        return df_tariff, df_weather, df_pred
+        return df_tariff, df_weather_report, df_weather_forecast, df_pred
 
     except Exception as e:
         print(f'Error occured while requesting grid imbalances from db.')
