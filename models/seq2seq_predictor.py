@@ -24,7 +24,7 @@ class Seq2SeqPredictor:
         self.mean = -8227.517005199943 if target == "customer_prosumption" else -6718.869614781172
         self.std = 13210.734393502056 if target == "customer_prosumption" else 18940.379106236847
 
-    def get_prediction(self, game_id: int, timeslot: int) -> pd.DataFrame:
+    def get_prediction(self, game_id: str, timeslot: int) -> pd.DataFrame:
         """
         In order for the neural network to process the data, it needs to be turned into a set of examples. In this case,
         we keep 6 separate sets depending on the type of feature and whether it's fed to the encoder or decoder. The

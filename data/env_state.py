@@ -2,15 +2,6 @@ import pandas as pd
 from data import mysql
 
 
-WEATHER_REPORT_QUERY = """
-select weatherReportId, gameId, cloudCover, temperature, windSpeed, timeslotIndex as timeslot  
-from weather_report 
-where timeslotIndex <= {latest_timeslot} 
-and timeslotIndex > {latest_timeslot}-{past_window_size}
-and gameId = {game_id}
-order by timeslotIndex desc 
-"""
-
 WEATHER_FORECAST_QUERY = """
 select weatherForecastId, gameId, cloudCover, temperature, windSpeed, postedTimeslotIndex as timeslot, proximity, targetTimeslotIndex as target_timeslot 
 from weather_forecast 
@@ -48,8 +39,7 @@ limit 1;
 """
 
 PREDICTION_QUERY = """
-select T1.predictionId, 
-T2.predictionId, T1.game_id, T2.game_id, T1.proximity, T2.proximity, T1.target_timeslot, T2.target_timeslot, timeslot.dayOfWeek as dow, timeslot.slotInDay as hod, timeslot.isWeekend, T1.prediction as grid_imbalance_prediction, T2.prediction as customer_prosumption_prediction
+select T1.predictionId, T2.predictionId, T1.game_id, T2.game_id, T1.proximity, T2.proximity, T1.target_timeslot, T2.target_timeslot, timeslot.dayOfWeek as dow, timeslot.slotInDay as hod, timeslot.isWeekend, T1.prediction as grid_imbalance_prediction, T2.prediction as customer_prosumption_prediction
 from (select * from prediction 
 where type = "imbalance" and target = "grid" 
 and prediction_timeslot = {latest_timeslot}
@@ -84,10 +74,6 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
             game_id=game_id,
             past_window_size=past_window_size)
         mubp_ewiis3_query = mubp_ewiis3_query.replace("\n", " ")
-        weather_report_query = WEATHER_REPORT_QUERY.format(
-            game_id=game_id,
-            latest_timeslot=latest_timeslot)
-        weather_report_query = weather_report_query.replace("\n", " ")
         weather_forecast_query = WEATHER_FORECAST_QUERY.format(
             game_id=game_id,
             latest_timeslot=latest_timeslot)
@@ -96,25 +82,50 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
             game_id=game_id,
             latest_timeslot=latest_timeslot)
         prediction_query = prediction_query.replace("\n", " ")
+
         # Query the data from the database as dataframes
         df_mubp_min = mysql.query(mubp_min_query)
         df_mubp_ewiis3 = mysql.query(mubp_ewiis3_query)
-        df_weather_report = mysql.query(weather_report_query)
-        df_weather_forecast = mysql.query(weather_forecast_query)
-        df_pred = mysql.query(prediction_query)  # grid imbalance and customer prosumption predictions
+        df_weather_forecast = mysql.query(weather_forecast_query).sort_values("proximity", ascending=True)
+        df_pred = mysql.query(prediction_query).sort_values("proximity", ascending=True)
+
+        print(df_mubp_min)
+        print(df_mubp_ewiis3)
+        print(df_weather_forecast)  # must have length 24 !!
+        print(df_pred)  # must have length 24 !!
+
+        # TODO: Check if all the predictions are there, for all 24 proximities:
+        #
+        #
+        #
+
         # Turn into observation the way it's described in PowerTACEnv
         mubp_min = df_mubp_min["MUBP_min"].iloc[0]
         mubp_ewiis3 = df_mubp_ewiis3["MUBP_EWIIS3"].iloc[0]
         percentual_deviation = (mubp_min - mubp_ewiis3) / abs(mubp_min)  # alpha
         periodic_payment = df_mubp_ewiis3["periodicPayment"].iloc[0]  # beta
-        # ...
-        print(df_mubp_min)
-        print(df_mubp_ewiis3)
-        print(df_weather_report)
-        print(df_weather_forecast)
-        print(df_pred)
-        return percentual_deviation, periodic_payment
+        periodic_payment_factor = 0.0  # TODO : how to get periodic payment factor from periodic payment ??
+        grid_imbalance = df_pred.grid_imbalance_prediction.values
+        customer_prosumption = df_pred.customer_prosumption_prediction.values
+        day_of_week = df_pred.dow.values
+        hour_of_day = df_pred.hod.values
+        temperature_forecast = df_weather_forecast.temperature
+        wind_speed_forecast = df_weather_forecast.windSpeed
+        cloud_cover_forecast = df_weather_forecast.cloudCover
+
+        return (
+            latest_timeslot,
+            percentual_deviation,
+            periodic_payment_factor,
+            grid_imbalance,
+            customer_prosumption,
+            day_of_week,
+            hour_of_day,
+            temperature_forecast,
+            wind_speed_forecast,
+            cloud_cover_forecast,
+        )
 
     except Exception as e:
-        print(f'Error occured while requesting grid imbalances from db.')
+        print(f'Error occured while requesting grid imbalances from db.', e)
         return pd.DataFrame(), None

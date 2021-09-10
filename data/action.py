@@ -1,9 +1,9 @@
 # Based on prediction.py
-import os
+# import os
 import pandas as pd
-import pypika
-from data import mysql
-from util import execution
+# import pypika
+# from data import mysql
+# from util import execution
 
 
 # Probably store in multiple databases, e.g. one for tariff and one for wholesale
@@ -16,8 +16,8 @@ persistence_config = {
 }
 
 
-def store_action(action) -> None:
-    # TODO
+def store_tuple(game_id, latest_timeslot, observation, action, reward, next_observation) -> None:
+    # A tuple looks like this (state, action, reward, next_state)
     pass
 
 
@@ -40,6 +40,6 @@ def get_action_file_path() -> str:
     return ""
 
 
-def action_exists(game_id: int, timeslot: int) -> bool:
+def tuple_exists(game_id: str, timeslot: int) -> bool:
     # TODO
     return False

@@ -4,7 +4,7 @@ from data import game
 from util import execution
 from models.seq2seq_predictor import Seq2SeqPredictor
 from time import sleep
-from data.prediction import store_predictions, prediction_exists  # load_predictions
+from data.prediction import store_predictions  # prediction_exists, load_predictions
 
 
 # load config
@@ -22,11 +22,14 @@ def predict(_game_id: str, _timeslot: int) -> None:
     store_predictions(df_prediction, "prediction")
 
 
+prediction_exists = []
 while True:
     print(f"RUNNING GAMES {game.running_ids()}")
     for game_id in game.running_ids():
         # TODO : add wait group and check for termination condition(s)
         timeslot = game.latest_timeslot(game_id)
-        if not prediction_exists(game_id, timeslot, "customer_prosumption"):
+        # TODO: do with prediction_exists method instead of appending to list and checking the list
+        if (game_id, timeslot) not in prediction_exists: 
+            prediction_exists.append((game_id, timeslot))
             execution.run_async(predict, game_id, timeslot)
     sleep(1)

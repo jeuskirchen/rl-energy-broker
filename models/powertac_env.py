@@ -1,28 +1,29 @@
 import numpy as np
-import pandas as pd
 import gym
-from gym.spaces import Box
+from gym.spaces import Box, Discrete
 from ..spaces.OneHot import OneHot
 from ..data.env_state import load_env_state
+from data import game
 
 
 class PowerTACEnv(gym.Env):
     """PowerTAC environment based on gym interface"""
-    metadata = {'render.modes': ['human']}
+    metadata = {'render.modes': ['console']}
 
-    def __init__(self, game_id: int):
+    def __init__(self, game_id: str):
         super(PowerTACEnv, self).__init__()
         self.game_id = game_id
+        self.latest_observation = None
         # Define action and observation space
         # Assumption: actions are the non-normalized values, i.e. they are denormalized before being passed to env
         # They are not the input or output to the neural network. The network inputs/outputs would have to be adjusted
         # inside the agent to turn them into the proper values as specified here:
         self.action_space = gym.spaces.Dict({
             # Tariff action:
-            "mean_alpha": Box(-np.inf, np.inf, shape=(1,)),  # alpha: percentual deviation
-            "std_alpha": Box(-np.inf, np.inf, shape=(1,)),
-            "mean_beta": Box(0., 10., shape=(1,)),  # beta: periodic payment factor
-            "std_beta": Box(-np.inf, np.inf, shape=(1,)),
+            "mean_percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),  # mean alpha
+            "std_percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),  # std alpha
+            "mean_periodic_payment_factor": Box(0., 10., shape=(1,)),  # mean beta
+            "std_periodic_payment_factor": Box(-np.inf, np.inf, shape=(1,)),  # std beta
             "state_value": Box(-np.inf, np.inf, shape=(1,)),
             "prob_new_iteration": Box(0.0, 1.0, shape=(1,)),  # skip for now
             # Wholesale action:
@@ -31,7 +32,9 @@ class PowerTACEnv(gym.Env):
             "is_market_order": Box(0.0, 1.0, shape=(24,)),
         })
         self.observation_space = gym.spaces.Dict({
-            "alpha": Box(-np.inf, np.inf, shape=(1,)),
+            "timeslot": Discrete(np.inf),
+            "percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),
+            "periodic_payment_factor": Box(-np.inf, np.inf, shape=(1,)),
             "grid_imbalance": Box(-np.inf, np.inf, shape=(24,)),
             "customer_prosumption": Box(-np.inf, np.inf, shape=(24,)),
             "day_of_week": gym.spaces.Tuple([OneHot(size=7) for _ in range(1, 24+1)]),
@@ -46,24 +49,33 @@ class PowerTACEnv(gym.Env):
         """
         Maps action to (observation: object, reward: flaot, done: bool, info: dict)
         """
-        observation = load_env_state(self.game_id, past_window_size=128)
+        # There might be a mismatch if it already moved to the next timeslot ??
+        latest_timeslot = game.latest_timeslot(self.game_id)
+        observation = load_env_state(
+            self.game_id,
+            latest_timeslot=latest_timeslot,
+            past_window_size=128
+        )
         reward = calculate_reward(observation)
-        done = False  # TODO
-        info = {}  # TODO
+        done = False
+        info = {
+            "game_id": self.game_id,
+            "timeslot": latest_timeslot,
+        }
         return observation, reward, done, info
 
-    def reset(self):
+    def reset(self) -> object:
         # TODO : returns initial observation after creating the environment
-        # Do some kind of nil observation?
+        # Return some kind of nil observation? same shape as regular observation!
         observation = None
         return observation
 
-    def render(self, mode="human"):
+    def render(self, mode: str = "console") -> None:
         # TODO
-        # e.g. print current observation (how do you usually access the observation from here?)
+        # e.g. print/represent current observation (how do you usually access the observation from here?)
         pass
 
-    def close(self):
+    def close(self) -> None:
         # TODO 
         pass
 

@@ -67,7 +67,7 @@ def get_prediction_file_path() -> str:
     return persistence_config["persistence_file"]
 
 
-def prediction_exists(game_id: int, timeslot: int, target_and_type: str) -> bool:
+def prediction_exists(game_id: str, timeslot: int, target_and_type: str) -> bool:
     # TODO: check database
     _target, _type = target_and_type.split("_")  # target="grid_imbalance" -> _target="grid", _type="imbalance"
     return False
