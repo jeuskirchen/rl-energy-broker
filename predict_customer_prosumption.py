@@ -4,7 +4,7 @@ from data import game
 from util import execution
 from models.seq2seq_predictor import Seq2SeqPredictor
 from time import sleep
-from data.prediction import load_predictions, store_predictions, prediction_exists
+from data.prediction import store_predictions, prediction_exists  # load_predictions
 
 
 # load config
@@ -12,7 +12,6 @@ dotenv.load_dotenv(dotenv.find_dotenv())
 
 # initialize global vars
 seq2seq_customer_prosumption = Seq2SeqPredictor("customer_prosumption")
-print(seq2seq_customer_prosumption)
 should_run = True
 
 

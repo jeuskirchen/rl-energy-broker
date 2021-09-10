@@ -159,3 +159,4 @@ pip-selfcheck.json
 .DS_Store
 .github
 .gitlab
+install_gym.md

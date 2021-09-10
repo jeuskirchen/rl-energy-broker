@@ -31,7 +31,7 @@ def connect() -> pymysql.Connection:
 
 def create_connection_engine():
     global db_user, db_pw, db_host, db_port, db_schema
-    connection_string = 'mysql+pymysql://{}:{}@{}:{}/{}'.format(db_user, db_pw, db_host, db_port, db_schema)
+    connection_string = f'mysql+pymysql://{db_user}:{db_pw}@{db_host}:{db_port}/{db_schema}'
     cnx = sqlalchemy.create_engine(connection_string, echo=False)
     return cnx
 

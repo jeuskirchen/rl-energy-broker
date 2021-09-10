@@ -1,8 +1,6 @@
 import os
-
 import pandas as pd
 import pypika
-
 from data import mysql
 from util import execution
 
@@ -28,20 +26,16 @@ def load_predictions(table_name: str, game_id: str, target=None, type=None) -> p
         where_clause = ' WHERE'
         if game_id:
             query.where()
-            where_clause = '{} game_id="{}"'.format(where_clause, game_id)
+            where_clause = f'{where_clause} game_id="{game_id}"'
         if target:
-            and_or_not = ''
-            if where_clause.find('=') > -1:
-                and_or_not = 'AND '
-            where_clause = '{} {}target="{}"'.format(where_clause, and_or_not, target)
+            and_or_not = 'AND ' if where_clause.find('=') > -1 else ''
+            where_clause = f'{where_clause} {and_or_not}target="{target}"'
         if type:
-            and_or_not = ''
-            if where_clause.find('=') > -1:
-                and_or_not = 'AND '
-            where_clause = '{} {}type="{}"'.format(where_clause, and_or_not, type)
+            and_or_not = 'AND ' if where_clause.find('=') > -1 else ''
+            where_clause = f'{where_clause} {and_or_not}type="{type}"'
         if not game_id and not target and not type:
             where_clause = ''
-        sql_statement = "SELECT * FROM {table_name}{where_clause}".format(table_name=table_name, where_clause=where_clause)
+        sql_statement = f"SELECT * FROM {table_name}{where_clause}"
         return mysql.query(sql_statement)
     except Exception as e:
         print(e)
@@ -75,5 +69,5 @@ def get_prediction_file_path() -> str:
 
 def prediction_exists(game_id: int, timeslot: int, target_and_type: str) -> bool:
     # TODO: check database
-    _target, _type = target_and_type.split("_") # target="grid_imbalance" -> _target="grid", _type="imbalance"
+    _target, _type = target_and_type.split("_")  # target="grid_imbalance" -> _target="grid", _type="imbalance"
     return False
