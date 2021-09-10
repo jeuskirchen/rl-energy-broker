@@ -46,7 +46,7 @@ class PowerTACEnv(gym.Env):
         """
         Maps action to (observation: object, reward: flaot, done: bool, info: dict)
         """
-        observation = load_env_state(self.game_id)
+        observation = load_env_state(self.game_id, past_window_size=128)
         reward = calculate_reward(observation)
         done = False  # TODO
         info = {}  # TODO
