@@ -1,5 +1,4 @@
 from typing import List
-
 from data.mysql import query
 
 
@@ -21,7 +20,7 @@ def latest_timeslot(game_id: str) -> int:
         df_latest = query(sql_statement)
         return df_latest['serialNumber'].values[0]
     except Exception as e:
-        print('Error occured while requesting latest timeslot for gameId {} from db.'.format(game_id))
+        print('Error occured while requesting latest timeslot for gameId {} from db.'.format(game_id), e)
         return None
 
 
@@ -30,7 +29,6 @@ def query_game_ids(query_string: str) -> List[str]:
         return query(query_string)['gameId'].values.tolist()
     except Exception as e:
         # FIXME : is there some sort of global logging scheme?
-        print(e)
         print(query_string)
-        print('an error occured while requesting game ids from db')
+        print('an error occured while requesting game ids from db', e)
         return []

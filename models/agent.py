@@ -1,57 +1,72 @@
 import os
-from typing import List
+from typing import Any
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import load_model
 import pickle
-# TODO : inherit from OpenAI baseline agent
-# does baseline agent already handle target networks etc. or do I have to do this myself??
-# https://github.com/DLR-RM/stable-baselines3
-# https://stable-baselines3.readthedocs.io/en/master/
-# Could this helpful? https://github.com/DLR-RM/rl-baselines3-zoo
-# https://github.com/openai/baselines
-# FIXME : perhaps don't call them alpha, beta but simply percentual_deviation and perioid_payment_factor
+import stable_baselines
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
 class Agent:
+    """
+    TODO : inherit from OpenAI baseline agent
+    does baseline agent already handle target networks etc. or do I have to do this myself??
+    https://github.com/DLR-RM/stable-baselines3
+    https://stable-baselines3.readthedocs.io/en/master/
+    Could this helpful? https://github.com/DLR-RM/rl-baselines3-zoo
+    https://github.com/openai/baselines
+    FIXME : perhaps don't call them alpha, beta but simply percentual_deviation and perioid_payment_factor
+    """
 
     def __init__(self, game_id=None) -> None:
         self.game_id = game_id
 
-    def get_action(self, timeslot: int) -> List:
+    def get_action_and_value(self, observation: object) -> [Any, Any]:
         """
+        Compute the action and value from the observation.
         """
 
-        # Predict the action and value
+        # Observation:
+        #   latest_timeslot (just so I have this information in here, not used by the agent)
+        #   percentual_deviation
+        #   periodic_payment_factor (not sure if used)
+        #   grid_imbalance
+        #   customer_prosumption
+        #   day_of_week
+        #   hour_of_day
+        #   temperature_forecast
+        #   wind_speed_forecast
+        #   cloud_cover_forecast
 
-        # Input: alpha, beta, grid imbalance predictions, customer prosumption predictions, hour-of-day, day-of-week
-        # temperature_forecast, wind_speed_forecast, cloud_cover_forecast
-        alpha = calculate_alpha(None)  # pass tariff_rates!!
-
-        # Tariff actions: mean_alpha, std_alpha, mean_beta, std_beta, value, prob_next_iteration
-        #   alpha: percentual deviation of EWIIS3 MUBP from active consumption tariff
-        #   beta: (continuous) periodic payment factor
-        # neural network
+        # Neural network:
         # how to do this with the LSTM?! do I need to store the hidden and cell states as object fields?
-        # FIXME : Does it make sense to put the tariff actions into a dataframe? or just do tuple?
-
-        # Wholesale actions: (electricity_amount, limit_price, is_market_order) for each timeslot in (1, ..., 24)
-        # Perhaps even a transformer that refines the grid imbalance and customer prosumption into wholesale bids.
+        # see how LSTM + gym are usually used together
+        # Perhaps even a transformer that refines the grid imbalance, customer prosumption, etc. into wholesale bids.
         # Alternatively, another Seq2Seq+attention model that takes earlier predictions as the encoder input and
         # a decoder that outputs the bids.
         # This is where a MCTS could also be implemented in the future for planning ahead.
-        #
-        #
-
-        # df_tariff_action = pd.DataFrame()
-        # df_wholesale_action = pd.DataFrame()
 
         # TODO : put it in the right format as described in the gym environment ! (see PowerTACEnv)
+        # Tariff action:
+        #   mean_percentual_deviation
+        #   std_percentual_deviation
+        #   mean_periodic_payment_factor
+        #   std_periodic_payment_factor
+        #   prob_new_iteration
+        # Wholesale action:
+        #   electricity_amount (for 24 subsequent timeslots)
+        #   limit_price (for 24 subsequent timeslots)
+        #   is_market_order (for 24 subsequent timeslots)
+        # State value:
+        #   value (or advantage, depending on the algorithm)
 
-        return []
+        action = None  # placeholder
+        value = None  # placeholder
+
+        return action, value
 
 
 def calculate_alpha(tariff_rates) -> float:

@@ -7,17 +7,34 @@ from data import game
 
 
 class PowerTACEnv(gym.Env):
-    """PowerTAC environment based on gym interface"""
+    """
+    PowerTAC environment based on gym interface
+    https://colab.research.google.com/github/araffin/rl-tutorial-jnrr19/blob/master/5_custom_gym_env.ipynb#scrollTo=BJbeiF0RUN-p
+    """
     metadata = {'render.modes': ['console']}
 
     def __init__(self, game_id: str):
         super(PowerTACEnv, self).__init__()
         self.game_id = game_id
         self.latest_observation = None
-        # Define action and observation space
-        # Assumption: actions are the non-normalized values, i.e. they are denormalized before being passed to env
-        # They are not the input or output to the neural network. The network inputs/outputs would have to be adjusted
-        # inside the agent to turn them into the proper values as specified here:
+        # Define observation and action space
+        self.observation_space = gym.spaces.Dict({
+            "timeslot": Discrete(10000),  # assuming 10000 is maximum number of timeslots per game
+            # Tariff market features:
+            "percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),
+            "periodic_payment_factor": Box(-np.inf, np.inf, shape=(1,)),
+            # more features? like the agent's current tariff and wholesale state?
+            # e.g. number of timeslots since broker last published a tariff, etc.
+            # Predictions:
+            "grid_imbalance": Box(-np.inf, np.inf, shape=(24,)),
+            "customer_prosumption": Box(-np.inf, np.inf, shape=(24,)),
+            # Temporal & weather features:
+            "day_of_week": gym.spaces.Tuple([OneHot(size=7) for _ in range(1, 24+1)]),
+            "hour_of_day": gym.spaces.Tuple([OneHot(size=24) for _ in range(1, 24+1)]),
+            "temperature_forecast": Box(-np.inf, np.inf, shape=(24,)),
+            "wind_speed_forecast": Box(-np.inf, np.inf, shape=(24,)),
+            "cloud_cover_forecast": Box(-np.inf, np.inf, shape=(24,)),
+        })
         self.action_space = gym.spaces.Dict({
             # Tariff action:
             "mean_percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),  # mean alpha
@@ -30,19 +47,6 @@ class PowerTACEnv(gym.Env):
             "electricity_amount": Box(-np.inf, np.inf, shape=(24,)),  # negative when we buy?
             "limit_price": Box(-np.inf, np.inf, shape=(24,)),  # negative when we buy?
             "is_market_order": Box(0.0, 1.0, shape=(24,)),
-        })
-        self.observation_space = gym.spaces.Dict({
-            "timeslot": Discrete(np.inf),
-            "percentual_deviation": Box(-np.inf, np.inf, shape=(1,)),
-            "periodic_payment_factor": Box(-np.inf, np.inf, shape=(1,)),
-            "grid_imbalance": Box(-np.inf, np.inf, shape=(24,)),
-            "customer_prosumption": Box(-np.inf, np.inf, shape=(24,)),
-            "day_of_week": gym.spaces.Tuple([OneHot(size=7) for _ in range(1, 24+1)]),
-            "hour_of_day": gym.spaces.Tuple([OneHot(size=24) for _ in range(1, 24+1)]),
-            "temperature_forecast": Box(-np.inf, np.inf, shape=(24,)),
-            "wind_speed_forecast": Box(-np.inf, np.inf, shape=(24,)),
-            "cloud_cover_forecast": Box(-np.inf, np.inf, shape=(24,)),
-            # more features? like the agent's current tariff and wholesale state?
         })
 
     def step(self, action) -> [object, float, bool, dict]:
@@ -57,8 +61,9 @@ class PowerTACEnv(gym.Env):
             past_window_size=128
         )
         reward = calculate_reward(observation)
-        done = False
+        done = (self.game_id in game.finished_ids())
         info = {
+            # Useful information for debugging, but should not be used for training
             "game_id": self.game_id,
             "timeslot": latest_timeslot,
         }

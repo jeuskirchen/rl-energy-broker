@@ -1,11 +1,15 @@
-# Dockerfile for playing around with tensorflow, gym and stable_baselines on remote workstation
-FROM tensorflow/tensorflow
-ENV DEBIAN_FRONTEND=noninteractive
+FROM tensorflow/tensorflow:1.15.5
+# https://hub.docker.com/r/tensorflow/tensorflow
+# https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
 
-RUN apt-get update \
-    && apt-get install cmake libopenmpi-dev python3-dev zlib1g-dev
-RUN pip3 install --upgrade pip \
-    && pip3 install scipy sklearn pandas matplotlib pickle5 ipython gym stable-baselines[mpi]
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -y \
+    && apt-get install -y cmake libopenmpi-dev zlib1g-dev \
+    && apt-get install -y ffmpeg libsm6 libxext6
+
+RUN pip3 install scipy sklearn pandas matplotlib pickle5 ipython gym stable-baselines
+# stable-baselines[mpi]
 
 WORKDIR /ewiis3
 COPY . /ewiis3

@@ -4,7 +4,6 @@ import pandas as pd
 from tensorflow.keras.models import load_model
 from data.customer import load_prosumption_weather_time
 from data.grid import load_grid_imbalance
-# import pickle
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -20,7 +19,8 @@ class Seq2SeqPredictor:
         assert os.path.exists(
             f"predictor/models/{filename}"), f"Error: h5 file with {self.target} model parameters is missing."
         self.model = load_model(f"predictor/models/{filename}")
-        # De-normalization/de-standardization statistics:
+        # De-normalization/de-standardization statistics
+        # (see Dataset_GridImbalance.ipynb, Dataset_CustomerProsumption.ipynb)
         self.mean = -8227.517005199943 if target == "customer_prosumption" else -6718.869614781172
         self.std = 13210.734393502056 if target == "customer_prosumption" else 18940.379106236847
 
@@ -41,6 +41,8 @@ class Seq2SeqPredictor:
             encoder_dataframe, decoder_dataframe = load_grid_imbalance(game_id, timeslot)
         elif self.target == "customer_prosumption":
             encoder_dataframe, decoder_dataframe = load_prosumption_weather_time(game_id, timeslot)
+        else:
+            encoder_dataframe, decoder_dataframe = None, None
         # Encoder data (dow, hod, weather, past target values) for 128 past timeslots (up to and including the current timeslot)
         # Decoder data (dow, hod, weather_forecasts) for 24 future timeslots
 
@@ -87,7 +89,7 @@ class Seq2SeqPredictor:
         y_pred = y_pred.reshape(-1)  # now it has shape (24,)
 
         # De-normalize/de-standardize:
-        y_pred = y_pred*self.std+self.mean
+        y_pred = y_pred * self.std + self.mean
 
         df_prediction = pd.DataFrame({
             "target_timeslot": decoder_dataframe["targetTimeslotIndex"],

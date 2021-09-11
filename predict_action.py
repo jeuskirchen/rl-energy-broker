@@ -31,8 +31,11 @@ def take_action(_game_id: str, latest_timeslot: int) -> None:
         envs[game_id] = PowerTACEnv(game_id)
         latest_observation[game_id] = envs[game_id].reset()  # returns initial observation after creating the environment
         agents[game_id] = Agent(game_id)
-    action = agents[game_id].get_action(latest_observation[game_id])
-    observation, reward, _, _ = envs[game_id].step(action)
+    # action, value = agents[game_id].get_action_and_value(latest_observation[game_id])
+    action = envs[game_id].action_space.sample()
+    value = 0.0
+    print(action, value)
+    observation, reward, done, _ = envs[game_id].step(action)
     store_tuple(game_id, latest_timeslot, latest_observation[game_id], action, reward, observation)
     latest_observation[game_id] = observation
     envs[game_id].render(mode="console")
@@ -41,10 +44,8 @@ def take_action(_game_id: str, latest_timeslot: int) -> None:
     #
     #
     #
-    '''
     if done:
-       envs[game_id].close()
-    '''
+        envs[game_id].close()
 
 
 while True:
