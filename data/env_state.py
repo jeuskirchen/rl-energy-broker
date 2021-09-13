@@ -2,8 +2,7 @@ import pandas as pd
 from data import mysql
 
 
-# Not sure if correct!!
-# I am assuming the minValueMoney is the relevant tariff rate
+# I am assuming the minValueMoney is the relevant tariff rate, but I don't know if that's correct.
 # Get MUBP_min (minimal mean usage-based price from among non-EWIIS3 brokers' tariffs)
 MUBP_MIN_QUERY = """
     select min(T.avgMinValueMoney) as MUBP_min 
@@ -105,26 +104,32 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
             game_id=game_id,
             latest_timeslot=latest_timeslot)
         prediction_query = prediction_query.replace("\n", " ")
+        '''
         weather_forecast_query = WEATHER_FORECAST_QUERY.format(
             game_id=game_id,
             latest_timeslot=latest_timeslot)
         weather_forecast_query = weather_forecast_query.replace("\n", " ")
+        '''
 
         # Query the data from the database as dataframes
         df_mubp_min = mysql.query(mubp_min_query)
         df_mubp_ewiis3 = mysql.query(mubp_ewiis3_query)
         df_pred = mysql.query(prediction_query).sort_values("proximity", ascending=True)
-        df_weather_forecast = mysql.query(weather_forecast_query).sort_values("proximity", ascending=True)
+        # df_weather_forecast = mysql.query(weather_forecast_query).sort_values("proximity", ascending=True)
 
         print(df_mubp_min)
         print(df_mubp_ewiis3)
         print(df_pred)  # must have length 24 !!
-        print(df_weather_forecast)  # must have length 24 !!
+        # print(df_weather_forecast)  # must have length 24 !!
 
         # TODO: Check if all the predictions are there, for all 24 proximities:
-        #
-        #
-        #
+        # What to do if it's not 24?
+        if df_pred.shape[0] != 24:
+            print("df_pred.shape =", df_pred.shape)
+        '''
+        if df_weather_forecast.shape[0] != 24:
+            print("df_weather_forecast.shape =", df_weather_forecast.shape)
+        '''
 
         # Turn into observation the way it's described in PowerTACEnv
         mubp_min = df_mubp_min["MUBP_min"].iloc[0]
@@ -135,21 +140,18 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
         customer_prosumption = df_pred.customer_prosumption_prediction.values
         day_of_week = df_pred.dow.values
         hour_of_day = df_pred.hod.values
-        temperature_forecast = df_weather_forecast.temperature
-        wind_speed_forecast = df_weather_forecast.windSpeed
-        cloud_cover_forecast = df_weather_forecast.cloudCover
+        # temperature_forecast = df_weather_forecast.temperature
+        # wind_speed_forecast = df_weather_forecast.windSpeed
+        # cloud_cover_forecast = df_weather_forecast.cloudCover
 
         return (
             latest_timeslot,
             percentual_deviation,
             # periodic_payment_factor,
-            grid_imbalance,
-            customer_prosumption,
-            day_of_week,
-            hour_of_day,
-            temperature_forecast,
-            wind_speed_forecast,
-            cloud_cover_forecast,
+            *day_of_week,
+            *hour_of_day,
+            *grid_imbalance,
+            *customer_prosumption,
         )
 
     except Exception as e:
