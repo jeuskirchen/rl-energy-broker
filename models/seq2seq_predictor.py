@@ -2,8 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import load_model
-from data.customer import load_prosumption_weather_time
-from data.grid import load_grid_imbalance
+from data.customer_prosumption import load_prosumption_weather_time
+from data.grid_imbalance import load_grid_imbalance
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -15,14 +15,26 @@ class Seq2SeqPredictor:
         assert target in ("grid_imbalance", "customer_prosumption"), "Error: There is no Seq2Seq model for this target."
         self.target = target  # what is being predicted? either "grid_imbalance" or "customer_prosumption"
         self.time_horizon = time_horizon  # how many past timeslots to take into account to make a prediction?
-        filename = "seq2seq_customer_prosumption_06_and_07_2021.h5" if target == "customer_prosumption" else "seq2seq_grid_imbalance_06_and_07_2021.h5"
+        filename = "customer_prosumption_seq2seq_model_06_and_07_2021_jointly_normalized_v2.h5" \
+            if target == "customer_prosumption" \
+            else "grid_imbalance_seq2seq_model_06_and_07_2021_jointly_normalized.h5"
         assert os.path.exists(
             f"predictor/models/{filename}"), f"Error: h5 file with {self.target} model parameters is missing."
         self.model = load_model(f"predictor/models/{filename}")
-        # De-normalization/de-standardization statistics
-        # (see Dataset_GridImbalance.ipynb, Dataset_CustomerProsumption.ipynb)
-        self.mean = -8227.517005199943 if target == "customer_prosumption" else -6718.869614781172
-        self.std = 13210.734393502056 if target == "customer_prosumption" else 18940.379106236847
+        # (De-)normalization/(de-)standardization statistics
+        # (see Dataset_GridImbalance.ipynb and Dataset_CustomerProsumption.ipynb)
+        self.mean = {
+            "target": -8227.517005199943 if target == "customer_prosumption" else -6718.869614781172,
+            "temperature": 14.000271467558404,
+            "cloudCover": 3.0026418168272904,
+            "windSpeed": 0.37609734634455794,
+        }
+        self.std = {
+            "target": 13210.734393502056 if target == "customer_prosumption" else 18940.379106236847,
+            "temperature": 12.77537269148727,
+            "cloudCover": 1.921132468469762,
+            "windSpeed": 0.31192627571372666,
+        }
 
     def get_prediction(self, game_id: str, timeslot: int) -> pd.DataFrame:
         """
@@ -59,6 +71,12 @@ class Seq2SeqPredictor:
             encoder_dataframe["windSpeed"],
             encoder_dataframe["netImbalance" if self.target == "grid_imbalance" else "SUM_kWH"]
         ])
+        # Normalize encoder features:
+        x_enc_features[0] = (x_enc_features[0] - self.mean["temperature"]) / self.std["temperature"]
+        x_enc_features[1] = (x_enc_features[1] - self.mean["cloudCover"]) / self.std["cloudCover"]
+        x_enc_features[2] = (x_enc_features[2] - self.mean["windSpeed"]) / self.std["windSpeed"]
+        x_enc_features[3] = (x_enc_features[3] - self.mean["target"]) / self.std["target"]
+        # Put into a single batch:
         x_enc_features = x_enc_features.reshape(1, -1, 4)  # turn into batch of size 1 (should be size (1, 128, 4))
 
         # Decoder features:
@@ -74,6 +92,12 @@ class Seq2SeqPredictor:
             decoder_dataframe["cloudCover"],
             decoder_dataframe["windSpeed"]
         ])
+        # Normalize decoder features:
+        # (here, using same statistics for equivalent encoder and decoder features)
+        x_dec_features[0] = (x_dec_features[0] - self.mean["temperature"]) / self.std["temperature"]
+        x_dec_features[1] = (x_dec_features[1] - self.mean["cloudCover"]) / self.std["cloudCover"]
+        x_dec_features[2] = (x_dec_features[2] - self.mean["windSpeed"]) / self.std["windSpeed"]
+        # Put into a single batch:
         x_dec_features = x_dec_features.reshape(1, -1, 3)  # turn into batch of size 1 (should be size (1, 24, 3))
 
         # Make prediction:
@@ -89,7 +113,7 @@ class Seq2SeqPredictor:
         y_pred = y_pred.reshape(-1)  # now it has shape (24,)
 
         # De-normalize/de-standardize:
-        y_pred = y_pred * self.std + self.mean
+        y_pred = y_pred * self.std["target"] + self.mean["target"]
 
         df_prediction = pd.DataFrame({
             "target_timeslot": decoder_dataframe["targetTimeslotIndex"],
@@ -97,6 +121,7 @@ class Seq2SeqPredictor:
             "prediction_timeslot": decoder_dataframe["postedTimeslotIndex"],
             "proximity": decoder_dataframe["proximity"],
         })
+
         df_prediction["game_id"] = game_id
         df_prediction["target"] = self.target[:self.target.find("_")]  # {"grid", "customer"}
         df_prediction["type"] = self.target[self.target.find("_")+1:]  # {"imbalance", "prosumption"}

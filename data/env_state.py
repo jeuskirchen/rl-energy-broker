@@ -114,6 +114,9 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
         # Query the data from the database as dataframes
         df_mubp_min = mysql.query(mubp_min_query)
         df_mubp_ewiis3 = mysql.query(mubp_ewiis3_query)
+        # TODO : wait for predictions !!
+        # Should only return the environment state after predictions have been made. 
+        # But only check after it has already queried past timeslots' data. We don't need to wait for that.
         df_pred = mysql.query(prediction_query).sort_values("proximity", ascending=True)
         # df_weather_forecast = mysql.query(weather_forecast_query).sort_values("proximity", ascending=True)
 
@@ -123,7 +126,7 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
         # print(df_weather_forecast)  # must have length 24 !!
 
         # TODO: Check if all the predictions are there, for all 24 proximities:
-        # What to do if it's not 24?
+        # What to do if it's not 24? Fill in, e.g. by repeating the final prediction for all remaining timeslots?
         if df_pred.shape[0] != 24:
             print("df_pred.shape =", df_pred.shape)
         '''
@@ -136,8 +139,9 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
         mubp_ewiis3 = df_mubp_ewiis3["MUBP_EWIIS3"].iloc[0]
         percentual_deviation = (mubp_min - mubp_ewiis3) / abs(mubp_min)  # alpha
         # periodic_payment = df_mubp_ewiis3["periodicPayment"].iloc[0]  # not currently part of observation
-        grid_imbalance = df_pred.grid_imbalance_prediction.values
-        customer_prosumption = df_pred.customer_prosumption_prediction.values
+        # Note: if agent uses RNN, if periodic payment factor is important, it should be remembered in hidden state
+        grid_imbalance_prediction = df_pred.grid_imbalance_prediction.values
+        customer_prosumption_prediction = df_pred.customer_prosumption_prediction.values
         day_of_week = df_pred.dow.values
         hour_of_day = df_pred.hod.values
         # temperature_forecast = df_weather_forecast.temperature
@@ -147,11 +151,10 @@ def load_env_state(game_id: str, latest_timeslot: int, past_window_size: int = 1
         return (
             latest_timeslot,
             percentual_deviation,
-            # periodic_payment_factor,
             *day_of_week,
             *hour_of_day,
-            *grid_imbalance,
-            *customer_prosumption,
+            *grid_imbalance_prediction,
+            *customer_prosumption_prediction,
         )
 
     except Exception as e:

@@ -6,97 +6,19 @@ from data import mysql
 from util import execution
 
 
-observation_space_names = [
-    "timeslot",
-    "percentual_deviation",
-    "day_of_week_0",
-    "day_of_week_1",
-    "day_of_week_2",
-    "day_of_week_3",
-    "day_of_week_4",
-    "day_of_week_5",
-    "day_of_week_6",
-    "hour_of_day_0",
-    "hour_of_day_1",
-    "hour_of_day_2",
-    "hour_of_day_3",
-    "hour_of_day_4",
-    "hour_of_day_5",
-    "hour_of_day_6",
-    "hour_of_day_7",
-    "hour_of_day_8",
-    "hour_of_day_9",
-    "hour_of_day_10",
-    "hour_of_day_11",
-    "hour_of_day_12",
-    "hour_of_day_13",
-    "hour_of_day_14",
-    "hour_of_day_15",
-    "hour_of_day_16",
-    "hour_of_day_17",
-    "hour_of_day_18",
-    "hour_of_day_19",
-    "hour_of_day_20",
-    "hour_of_day_21",
-    "hour_of_day_22",
-    "hour_of_day_23",
-    "grid_imbalance_prediction_0",
-    "grid_imbalance_prediction_1",
-    "grid_imbalance_prediction_2",
-    "grid_imbalance_prediction_3",
-    "grid_imbalance_prediction_4",
-    "grid_imbalance_prediction_5",
-    "grid_imbalance_prediction_6",
-    "grid_imbalance_prediction_7",
-    "grid_imbalance_prediction_8",
-    "grid_imbalance_prediction_9",
-    "grid_imbalance_prediction_10",
-    "grid_imbalance_prediction_11",
-    "grid_imbalance_prediction_12",
-    "grid_imbalance_prediction_13",
-    "grid_imbalance_prediction_14",
-    "grid_imbalance_prediction_15",
-    "grid_imbalance_prediction_16",
-    "grid_imbalance_prediction_17",
-    "grid_imbalance_prediction_18",
-    "grid_imbalance_prediction_19",
-    "grid_imbalance_prediction_20",
-    "grid_imbalance_prediction_21",
-    "grid_imbalance_prediction_22",
-    "grid_imbalance_prediction_23",
-    "customer_prosumption_prediction_0",
-    "customer_prosumption_prediction_1",
-    "customer_prosumption_prediction_2",
-    "customer_prosumption_prediction_3",
-    "customer_prosumption_prediction_4",
-    "customer_prosumption_prediction_5",
-    "customer_prosumption_prediction_6",
-    "customer_prosumption_prediction_7",
-    "customer_prosumption_prediction_8",
-    "customer_prosumption_prediction_9",
-    "customer_prosumption_prediction_10",
-    "customer_prosumption_prediction_11",
-    "customer_prosumption_prediction_12",
-    "customer_prosumption_prediction_13",
-    "customer_prosumption_prediction_14",
-    "customer_prosumption_prediction_15",
-    "customer_prosumption_prediction_16",
-    "customer_prosumption_prediction_17",
-    "customer_prosumption_prediction_18",
-    "customer_prosumption_prediction_19",
-    "customer_prosumption_prediction_20",
-    "customer_prosumption_prediction_21",
-    "customer_prosumption_prediction_22",
-    "customer_prosumption_prediction_23]"
-]
-
+# it's actually both the action and the state value
+# Note: originally, this included the state value as well, but the way stable-baseline's
+# actor-critic code works is that it keeps track of the value itself (which makes sense,
+# as it is needed for the algorithm).
 action_space_names = [
     "mean_percentual_deviation",
     "std_percentual_deviation",
     "mean_periodic_payment_factor",
     "std_periodic_payment_factor",
-    "state_value",
     "prob_new_iteration",
+]
+# I removed the wholesale actions for now:
+"""
     "wholesale_electricity_amount_0",
     "wholesale_electricity_amount_1",
     "wholesale_electricity_amount_2",
@@ -169,15 +91,13 @@ action_space_names = [
     "is_market_order_21",
     "is_market_order_22",
     "is_market_order_23",
-]
+"""
 
+# Only things that are relevant right now:
 index = [
     "game_id",
-    "latest_timeslot",
-    *observation_space_names,
-    *action_space_names,
-    "reward",
-    *["next_" + name for name in observation_space_names]
+    "action_timeslot",
+    *action_space_names,  # including the state value
 ]
 
 persistence_config = {
@@ -187,13 +107,11 @@ persistence_config = {
 
 
 def store_tuple(game_id, timeslot, observation, action, reward, next_observation) -> None:
+    # Full tuple:
     rl_tuple = [
         str(game_id),
         timeslot,
-        *observation,
-        *action,
-        reward,
-        *next_observation
+        *action,  # including the state value
     ]
     df_tuple = pd.DataFrame(rl_tuple, index=index).T
     execution.run_async(persist_to_file, df_tuple)

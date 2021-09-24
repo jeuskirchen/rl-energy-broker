@@ -8,7 +8,7 @@ RUN apt-get update -y \
     && apt-get install -y cmake libopenmpi-dev zlib1g-dev \
     && apt-get install -y ffmpeg libsm6 libxext6
 
-RUN pip3 install scipy sklearn pandas matplotlib pickle5 ipython gym stable-baselines[mpi] python-dotenv PyMySQL SQLAlchemy PyPika
+RUN pip3 install scipy sklearn pandas matplotlib pickle5 ipython gym stable-baselines python-dotenv PyMySQL SQLAlchemy PyPika
 
 WORKDIR /ewiis3
 COPY . /ewiis3

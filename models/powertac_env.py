@@ -1,6 +1,7 @@
 import numpy as np
 import gym
-from ..data.env_state import load_env_state
+from data.env_state import load_env_state
+from data.reward import load_reward
 from data import game
 
 
@@ -114,6 +115,8 @@ class PowerTACEnv(gym.Env):
             [-np.inf, np.inf],  # std_periodic_payment_factor
             [-np.inf, np.inf],  # state_value
             [0, 1],  # prob_new_iteration
+        ])
+        """
             [-np.inf, np.inf],  # wholesale_electricity_amount[0]
             [-np.inf, np.inf],  # wholesale_electricity_amount[1]
             [-np.inf, np.inf],  # wholesale_electricity_amount[2]
@@ -186,7 +189,7 @@ class PowerTACEnv(gym.Env):
             [0, 1],  # is_market_order[21]
             [0, 1],  # is_market_order[22]
             [0, 1],  # is_market_order[23]
-        ])
+        """
         self.action_space = gym.spaces.Box(
             low=action_space_bounds[:, 0],
             high=action_space_bounds[:, 1],
@@ -204,13 +207,15 @@ class PowerTACEnv(gym.Env):
             latest_timeslot=timeslot,
             past_window_size=128
         )
-        reward = calculate_reward(observation)
+        reward = self.calculate_reward(timeslot)
         done = (self.game_id in game.finished_ids())
         info = {
             # Useful information for debugging, but should not be used for training
-            # e.g. current total cash of all the brokers
+            # e.g. current total cash of all the brokers, or market share, or current wholesale prices
             "game_id": self.game_id,
             "timeslot": timeslot,
+            "reward": reward,
+            "done": done,
         }
         return observation, reward, done, info
 
@@ -219,33 +224,24 @@ class PowerTACEnv(gym.Env):
         observation = np.zeros(self.observation_space.shape)
         return observation
 
+    def calculate_reward(self, timeslot: int) -> float:
+        reward_dataframe = load_reward(self.game_id, timeslot)
+
+        # TODO : detect if penalize_revoke
+        # see QLearner.java, RlLearner.java, TariffAnalysisService.java in current EWIIS3 java broker
+        sum_charge = reward_dataframe["sum_charge"]
+        '''
+        # From python-scripts:
+        df_prosumption = db.load_consumption_tariff_prosumption(game_id, 24)
+        df_prosumption["grid_prosumption"] = df_prosumption["totalProduction"] - df_prosumption["totalConsumption"]
+        # df_earnings = db.load_consumption_tariff_earnings(game_id, 24)
+        '''
+        return sum_charge
+
     def render(self, mode: str = "console") -> None:
         pass
 
     def close(self) -> None:
-        # TODO 
+        # TODO
         pass
 
-
-def calculate_reward(observation: object) -> float:
-    # TODO : see formula from new MDP formulation
-    return 0.0
-
-
-'''
-# This is what it looks like in ewiis3_python_scripts: 
-def _get_reward(self):
-    """
-    Source: ewiis3-broker/ewiis3_python_scripts/blob/master/src/ewiis3_python_scripts/envs/tariff_env.py
-    """
-    all_game_ids = db.get_running_gameIds()
-    game_id = all_game_ids[0]
-    df_prosumption = db.load_consumption_tariff_prosumption(game_id, 24)
-    df_prosumption["grid_prosumption"] = df_prosumption["totalProduction"] - df_prosumption["totalConsumption"]
-    # df_earnings = db.load_consumption_tariff_earnings(game_id, 24)
-
-    # print(df_prosumption.columns)
-    print(numpy.corrcoef(df_prosumption["grid_prosumption"], df_prosumption["SUM(t.kWh)"]))
-    # print(df_earnings.head())
-    return np.random.randint(0, 5)
-'''
