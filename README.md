@@ -4,6 +4,8 @@
 
 ## Reinforcement Learning
 
+***Warning: The Python broker has not yet been extensively tested. There are still many problems.***
+
 The IS3 Python broker only creates consumption tariffs. All other tariffs are created in the same manner as the previous version of the broker. 
 
 The RL agent is a simple MLP that takes as input an observation of 81 scalar numbers and outputs an action of 5 scalar numbers, and is trained using A2C (Advantage Actor-Critic). The observation space and action space of the environment are defined in `powertac_env.py`.  
