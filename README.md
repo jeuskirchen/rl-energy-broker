@@ -4,6 +4,8 @@
 
 ## Reinforcement Learning
 
+The IS3 Python broker only creates consumption tariffs. All other tariffs are created in the same manner as the previous version of the broker. 
+
 The RL agent is a simple MLP that takes as input an observation of 81 scalar numbers and outputs an action of 5 scalar numbers, and is trained using A2C (Advantage Actor-Critic). The observation space and action space of the environment are defined in `powertac_env.py`.  
 
 The 81-vector **observation** is made of: 
@@ -26,6 +28,8 @@ The 5-vector **action** is made of:
 - mean periodic payment factor
 - std periodic payment factor
 - the probability of starting a new iteration
+
+The broker uses the same time-of-use tariff scheme as the previous version (see `StdConsumptionTariff` in the Java broker), which is constructed using a MUBP and PPF. The MUBP can be calculated from the mean percentual deviation. During training, both the MUBP and PPF can be sampled from the normal distribution with the above mean and std, which can also aid in exploration, while during inference, one can simply use the mean. The broker also predicts whether to start a new 'iteration' (same definition as before) in the next timeslot. 
 
 
 ## Seq2Seq
@@ -53,3 +57,15 @@ Additionally, the Seq2Seq model can be extended by an attention mechanism to all
 Especially in the context of an attention mechanism, a bidirectional encoder network can make sense such that the keys and values can take all of the timeslot's surroundings into account to produce an accurate picture of what is happening at this point in time. A bidirectional encoder simply processes the input sequence using two separate recurrent sub-networks, one from left to right (original order) and one from right to left (reverse order). The outputs of these two sub-networks at each timeslot are concatenated and passed on to the next layer. Furthermore, the final memory states are concatenated and passed on to the decoder as a single encoder sequence representation.
 
 ![](/figures/Seq2Seq%20attention%20bidirectional%20powertac.jpg)
+
+## Future 
+
+Ideas for future improvements: 
+- make it easy to add new tariffs to the RL broker, e.g. when you add a new tariff in the Java broker, this should correspond to a learned tariff in the Python broker; at the moment, this is only the case for the consumption tariff 
+- transformer neural networks instead of Seq2Seq predictor 
+- transformer neural network to turn predictions (and possibly additional features) into bids 
+- use LSTM for the broker
+
+Possible future Python broker architecture:  
+
+![](/figures/broker_architecture.jpg)
