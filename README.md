@@ -1,6 +1,31 @@
-## ewiis3-python-broker 
+## is3-python-broker 
 
 ![](/figures/broker_architecture.jpg)
+
+## Reinforcement Learning
+
+The RL agent is a simple MLP that takes as input an observation of 81 scalar numbers and outputs an action of 5 scalar numbers, and is trained using A2C (Advantage Actor-Critic). The observation space and action space of the environment are defined in `powertac_env.py`.  
+
+The 81-vector **observation** is made of: 
+- 24 grid imbalance predictions outputted by the Seq2Seq predictor (one per hour for the next 24 hours)
+- 24 customer prosumption predicitons outputted by the Seq2Seq predictor (one per hour for the next 24 hours)
+- 24 one-hot values encoding the time-of-day 
+- 7 one-hot values encoding the day-of-week
+- the current timeslot in the game 
+- the market's current percentual deviation (defined the same as in EWIIS3 2020)  
+
+Definition of the observed percentual deviation: Let `MUBP` be the mean-usage based price for a given consumption tariff, and `MUBP_min` the smallest such `MUBP` across all active consumption tariff (not including the broker's own consumption tariff), and let `MUBP_IS3` be the IS3 broker's own consumption tariff, then the percentual deviation is defined as 
+
+```
+percentual_deviation = (MUBP_min - MUBP_IS3)/|MUBP_min|
+```
+
+The 5-vector **action** is made of:  
+- mean percentual deviation
+- std percentual deviation
+- mean periodic payment factor
+- std periodic payment factor
+- the probability of starting a new iteration
 
 
 ## Seq2Seq
