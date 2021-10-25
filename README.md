@@ -65,11 +65,14 @@ Especially in the context of an attention mechanism, a bidirectional encoder net
 ## Future 
 
 Ideas for future improvements: 
+- use more market information as input features 
 - make it easy to add new tariffs to the RL broker, e.g. when you add a new tariff in the Java broker, this should correspond to a learned tariff in the Python broker; at the moment, this is only the case for the consumption tariff 
 - transformer neural networks instead of Seq2Seq predictor 
 - transformer neural network to turn predictions (and possibly additional features) into bids 
 - MCTS for bidding 
 - use LSTM for the broker
+- train on many more games
+- test the broker's behaviors: what do the tariffs look like that it creates? based on what MUBP and PPF does it create tariffs? when does it start a new iteration? what is the value for different states (difficult to visualize since the observation space has 81 dimensions, but at least for a subset of observation features, while averaging over the other features, most importantly the percentual deviation)?
 
 Possible future Python broker architecture:  
 
