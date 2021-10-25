@@ -33,6 +33,8 @@ The 5-vector **action** is made of:
 
 The broker uses the same time-of-use tariff scheme as the previous version (see `StdConsumptionTariff` in the Java broker), which is constructed using a MUBP and PPF. The MUBP can be calculated from the mean percentual deviation. During training, both the MUBP and PPF can be sampled from the normal distribution with the above mean and std, which can also aid in exploration, while during inference, one can simply use the mean. The broker also predicts whether to start a new 'iteration' (same definition as before) in the next timeslot. 
 
+The **reward** is simply the sum of past charges. There's not any kind of penalty. 
+
 
 ## Seq2Seq
 
