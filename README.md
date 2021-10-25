@@ -68,6 +68,7 @@ Ideas for future improvements:
 - make it easy to add new tariffs to the RL broker, e.g. when you add a new tariff in the Java broker, this should correspond to a learned tariff in the Python broker; at the moment, this is only the case for the consumption tariff 
 - transformer neural networks instead of Seq2Seq predictor 
 - transformer neural network to turn predictions (and possibly additional features) into bids 
+- MCTS for bidding 
 - use LSTM for the broker
 
 Possible future Python broker architecture:  
