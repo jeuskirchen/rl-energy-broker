@@ -1,6 +1,6 @@
 ## rl-energy-broker 
 
-![](/figures/broker_architecture.jpg)
+![](/figures/broker_architecture.png)
 
 ## Reinforcement Learning
 
@@ -44,13 +44,13 @@ The basic Seq2Seq model consists of two recurrent networks: the encoder network 
 
 Other than shown in this drawing, the implemented Seq2Seq does not currently pass the output from one decoder timestep as input to the next decoder timestep. 
 
-![](/figures/Seq2Seq%20basic%20powertac.jpg)
+![](/figures/Seq2Seq%20basic%20powertac.png)
 
 ### 2. Seq2Seq with context vector
 
 Instead of relying on the decoder network to remember all the information about the encoder sequence via the memory state, the final encoder network's output (acting as an additional representation of the encoder sequence) is passed in a time-distributed fashion as an input feature to each decoder timestep. This vector is then referred to as the context vector since it provides the decoder with context to help predict the next decoder step. 
 
-![](/figures/Seq2Seq%20context-vector%20powertac.jpg)
+[//]: #![](/figures/Seq2Seq%20context-vector%20powertac.jpg)
 
 ### 3. Bidirectional Seq2Seq with context vector and attention mechanism
 
@@ -58,7 +58,7 @@ Additionally, the Seq2Seq model can be extended by an attention mechanism to all
 
 Especially in the context of an attention mechanism, a bidirectional encoder network can make sense such that the keys and values can take all of the timeslot's surroundings into account to produce an accurate picture of what is happening at this point in time. A bidirectional encoder simply processes the input sequence using two separate recurrent sub-networks, one from left to right (original order) and one from right to left (reverse order). The outputs of these two sub-networks at each timeslot are concatenated and passed on to the next layer. Furthermore, the final memory states are concatenated and passed on to the decoder as a single encoder sequence representation.
 
-![](/figures/Seq2Seq%20attention%20bidirectional%20powertac.jpg)
+[//]: #![](/figures/Seq2Seq%20attention%20bidirectional%20powertac.jpg)
 
 ## Future 
 
@@ -71,7 +71,3 @@ Ideas for future improvements:
 - use LSTM for the broker
 - train on many more games
 - test the broker's behaviors: what do the tariffs look like that it creates? based on what MUBP and PPF does it create tariffs? when does it start a new iteration? what is the value for different states (difficult to visualize since the observation space has 81 dimensions, but at least for a subset of observation features, while averaging over the other features, most importantly the percentual deviation)?
-
-Possible future Python broker architecture:  
-
-![](/figures/broker_architecture.jpg)
