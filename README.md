@@ -36,6 +36,8 @@ The **reward** is simply the sum of past charges. There's not any kind of penalt
 
 ## Seq2Seq
 
+![](/figures/seq2seq-attention.gif)
+
 Rough sketches of the Seq2Seq architectures for the grid imbalance and customer prosumption prediction models. Each model takes in the 128 past and present timeslots and predicts the future 24 timeslots. In order to make this prediction, it also takes into account temperature, cloud cover, wind speed, day-of-week and hour-of-day features. For the future timeslots, real weather data is substituted by weather forecasts.
 
 ### 1. Basic Seq2Seq
